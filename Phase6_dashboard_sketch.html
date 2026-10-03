@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L2D Churn Deferral — Dashboard Sketches</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d27;
+            --bg-card: #222639;
+            --bg-card-hover: #2a2f45;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0b4;
+            --text-muted: #6b7185;
+            --accent-blue: #4f8cff;
+            --accent-purple: #8b5cf6;
+            --accent-teal: #14b8a6;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-green: #22c55e;
+            --border: #2d3250;
+            --glow-blue: rgba(79, 140, 255, 0.15);
+            --glow-purple: rgba(139, 92, 246, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 140, 255, 0.3);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Header */
+        .dashboard-header {
+            margin-bottom: 24px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dashboard-header p {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .kpi-card:nth-child(1)::before { background: var(--accent-blue); }
+        .kpi-card:nth-child(2)::before { background: var(--accent-purple); }
+        .kpi-card:nth-child(3)::before { background: var(--accent-orange); }
+        .kpi-card:nth-child(4)::before { background: var(--accent-teal); }
+
+        .kpi-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Filters */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+        }
+
+        .filter-group label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        /* Scatter Plot Placeholder */
+        .chart-placeholder {
+            height: 240px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            border: 1px dashed var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-placeholder-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            z-index: 1;
+        }
+
+        /* Simulated scatter dots */
+        .scatter-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        .scatter-dot.error { background: var(--accent-red); }
+        .scatter-dot.correct { background: var(--accent-blue); opacity: 0.4; }
+
+        /* Simulated bar chart */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 200px;
+            padding: 16px 0;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 40px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+        }
+
+        .bar-label {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .bar-value {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        /* Table */
+        .data-table-container {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .data-table th {
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .data-table tr:hover td {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        /* Score badges */
+        .score-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .score-high { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .score-medium { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+        .score-low { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+
+        /* Heatmap */
+        .heatmap {
+            display: grid;
+            gap: 2px;
+        }
+
+        .heatmap-row {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+
+        .heatmap-label {
+            width: 160px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: right;
+            padding-right: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .heatmap-cell {
+            flex: 1;
+            height: 24px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: white;
+            min-width: 44px;
+        }
+
+        .heatmap-header {
+            display: flex;
+            gap: 2px;
+            margin-left: 160px;
+            margin-bottom: 4px;
+        }
+
+        .heatmap-header span {
+            flex: 1;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            min-width: 44px;
+        }
+
+        /* Line chart placeholder */
+        .line-chart-area {
+            height: 200px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .line-path {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            top: 0;
+        }
+
+        /* Status indicators */
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-high { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .status-medium { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+        .status-low { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* Sketch label */
+        .sketch-notice {
+            text-align: center;
+            padding: 12px;
+            background: rgba(79, 140, 255, 0.08);
+            border: 1px solid rgba(79, 140, 255, 0.2);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: var(--accent-blue);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .charts-grid { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="sketch-notice">
+            📐 Dashboard Sketch — Layout and data structure for Power BI implementation.
+            Static mockup with representative data from the L2D pipeline.
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('analyst')">
+                👤 Analyst Deferral Queue
+            </button>
+            <button class="tab-btn" onclick="switchTab('mlteam')">
+                🔬 ML Team Drift Monitor
+            </button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TAB 1: ANALYST DEFERRAL QUEUE                   -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <div id="tab-analyst" class="tab-content active">
+            <div class="dashboard-header">
+                <h1>Churn Deferral Queue</h1>
+                <p>Cases the model is uncertain about or exhibiting explanation drift — sorted by composite risk score for analyst review</p>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Cases in Queue</div>
+                    <div class="kpi-value" style="color: var(--accent-blue);">945</div>
+                    <div class="kpi-sub">15% of all cases (windows 1-9)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Composite Score</div>
+                    <div class="kpi-value" style="color: var(--accent-purple);">1.24</div>
+                    <div class="kpi-sub">Score(x) = U(x) + D(x) + λ·U·D</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Model Errors Caught</div>
+                    <div class="kpi-value" style="color: var(--accent-orange);">38.7%</div>
+                    <div class="kpi-sub">Deferral precision (avg windows 3-9)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Churn Probability</div>
+                    <div class="kpi-value" style="color: var(--accent-teal);">0.71</div>
+                    <div class="kpi-sub">Among deferred cases</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>Window</label>
+                    <select>
+                        <option>All (1-9)</option>
+                        <option>Window 3</option>
+                        <option>Window 4</option>
+                        <option>Window 5</option>
+                        <option>Window 6</option>
+                        <option>Window 7</option>
+                        <option>Window 8</option>
+                        <option>Window 9</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Churn Prob ≥</label>
+                    <input type="range" min="0" max="100" value="0" style="width: 80px;">
+                    <span style="font-size: 11px; color: var(--text-secondary);">0%</span>
+                </div>
+                <div class="filter-group">
+                    <label>Drift Severity ≥</label>
+                    <input type="range" min="0" max="100" value="0" style="width: 80px;">
+                    <span style="font-size: 11px; color: var(--text-secondary);">0.0</span>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">U(x) vs D(x) — Deferred Cases</div>
+                    <div class="chart-placeholder" id="scatter-chart">
+                        <!-- Scatter dots generated by JS -->
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot" style="background: var(--accent-red);"></div> Model error</div>
+                        <div class="legend-item"><div class="legend-dot" style="background: var(--accent-blue);"></div> Correct prediction</div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Deferred Cases by Window</div>
+                    <div class="bar-chart">
+                        <div class="bar-group">
+                            <div class="bar-value">105</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));"></div>
+                            <div class="bar-label">W3</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">105</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));"></div>
+                            <div class="bar-label">W4</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">105</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));"></div>
+                            <div class="bar-label">W5</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">105</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));"></div>
+                            <div class="bar-label">W6</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">105</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));"></div>
+                            <div class="bar-label">W7</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">105</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));"></div>
+                            <div class="bar-label">W8</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">105</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));"></div>
+                            <div class="bar-label">W9</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deferral Queue Table -->
+            <div class="chart-card full-width">
+                <div class="chart-title">Deferral Queue — Top Cases by Composite Score</div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Window</th>
+                                <th>Score(x)</th>
+                                <th>U(x)</th>
+                                <th>D(x)</th>
+                                <th>Churn Prob</th>
+                                <th>Tenure</th>
+                                <th>Monthly $</th>
+                                <th>SHAP Explanation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#2847</td>
+                                <td>W5</td>
+                                <td><span class="score-badge score-high">2.41</span></td>
+                                <td>0.94</td>
+                                <td>0.87</td>
+                                <td>94%</td>
+                                <td>3 mo</td>
+                                <td>$89.50</td>
+                                <td>Contract_Two year ↓ (SHAP=-1.82), tenure ↓ (-0.94), MonthlyCharges ↑ (+0.63)</td>
+                            </tr>
+                            <tr>
+                                <td>#5102</td>
+                                <td>W7</td>
+                                <td><span class="score-badge score-high">2.18</span></td>
+                                <td>0.91</td>
+                                <td>0.73</td>
+                                <td>91%</td>
+                                <td>1 mo</td>
+                                <td>$75.20</td>
+                                <td>tenure ↓ (SHAP=-1.45), OnlineSecurity ↓ (-0.88), PaperlessBilling ↑ (+0.52)</td>
+                            </tr>
+                            <tr>
+                                <td>#3291</td>
+                                <td>W6</td>
+                                <td><span class="score-badge score-high">1.97</span></td>
+                                <td>0.87</td>
+                                <td>0.65</td>
+                                <td>87%</td>
+                                <td>5 mo</td>
+                                <td>$95.10</td>
+                                <td>Contract_Two year ↓ (SHAP=-1.61), MonthlyCharges ↑ (+0.73), TechSupport ↓ (-0.49)</td>
+                            </tr>
+                            <tr>
+                                <td>#4556</td>
+                                <td>W8</td>
+                                <td><span class="score-badge score-medium">1.54</span></td>
+                                <td>0.78</td>
+                                <td>0.51</td>
+                                <td>78%</td>
+                                <td>8 mo</td>
+                                <td>$70.85</td>
+                                <td>tenure ↓ (SHAP=-1.12), PaymentMethod_Electronic ↑ (+0.67), Dependents ↓ (-0.33)</td>
+                            </tr>
+                            <tr>
+                                <td>#1923</td>
+                                <td>W4</td>
+                                <td><span class="score-badge score-medium">1.31</span></td>
+                                <td>0.62</td>
+                                <td>0.48</td>
+                                <td>62%</td>
+                                <td>12 mo</td>
+                                <td>$84.30</td>
+                                <td>Contract_One year ↓ (SHAP=-0.94), StreamingTV ↑ (+0.55), OnlineBackup ↓ (-0.41)</td>
+                            </tr>
+                            <tr>
+                                <td>#6721</td>
+                                <td>W9</td>
+                                <td><span class="score-badge score-low">0.87</span></td>
+                                <td>0.53</td>
+                                <td>0.22</td>
+                                <td>53%</td>
+                                <td>18 mo</td>
+                                <td>$55.60</td>
+                                <td>tenure ↓ (SHAP=-0.73), PaperlessBilling ↑ (+0.38), SeniorCitizen ↑ (+0.21)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted);">
+                    Data source: <code>phase6_deferred_queue.csv</code> — Full customer deferral data with SHAP explanations
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TAB 2: ML TEAM DRIFT MONITOR                   -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <div id="tab-mlteam" class="tab-content">
+            <div class="dashboard-header">
+                <h1>Explanation Drift Monitor</h1>
+                <p>Tracks how SHAP explanation distributions shift over time — signals when retraining is needed</p>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Features Drifted (Window 9)</div>
+                    <div class="kpi-value" style="color: var(--accent-red);">20/32</div>
+                    <div class="kpi-sub">62.5% of features show significant drift</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Effect Size (Window 9)</div>
+                    <div class="kpi-value" style="color: var(--accent-purple);">0.42</div>
+                    <div class="kpi-sub">Rank-biserial effect size</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Top Drifting Feature</div>
+                    <div class="kpi-value" style="color: var(--accent-orange); font-size: 20px;">tenure</div>
+                    <div class="kpi-sub">Effect size: 0.897 (very large)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Retrain Signal</div>
+                    <div class="kpi-value"><span class="status-pill status-high">HIGH</span></div>
+                    <div class="kpi-sub">&gt;60% features drifted → retrain recommended</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>Features</label>
+                    <select>
+                        <option>All Features (32)</option>
+                        <option>Top 5 by Effect Size</option>
+                        <option>Significant Only</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Window Range</label>
+                    <select>
+                        <option>All (1-9)</option>
+                        <option>Recent (7-9)</option>
+                        <option>Custom...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <!-- Heatmap -->
+                <div class="chart-card full-width">
+                    <div class="chart-title">Feature × Window Drift Heatmap (Effect Size)</div>
+                    <div class="heatmap-header">
+                        <span>W1</span><span>W2</span><span>W3</span><span>W4</span>
+                        <span>W5</span><span>W6</span><span>W7</span><span>W8</span><span>W9</span>
+                    </div>
+                    <div class="heatmap" id="heatmap">
+                        <!-- Generated by JS -->
+                    </div>
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; color: var(--text-muted);">Effect size:</span>
+                        <div style="display: flex; gap: 2px;">
+                            <div style="width: 20px; height: 12px; background: rgba(79, 140, 255, 0.1); border-radius: 2px;"></div>
+                            <div style="width: 20px; height: 12px; background: rgba(79, 140, 255, 0.3); border-radius: 2px;"></div>
+                            <div style="width: 20px; height: 12px; background: rgba(79, 140, 255, 0.5); border-radius: 2px;"></div>
+                            <div style="width: 20px; height: 12px; background: rgba(79, 140, 255, 0.7); border-radius: 2px;"></div>
+                            <div style="width: 20px; height: 12px; background: rgba(79, 140, 255, 0.9); border-radius: 2px;"></div>
+                        </div>
+                        <span style="font-size: 10px; color: var(--text-muted);">0.0 → 1.0</span>
+                    </div>
+                </div>
+
+                <!-- Drift Trend Line -->
+                <div class="chart-card">
+                    <div class="chart-title">Drift Trend: Top 5 Features Over Time</div>
+                    <div class="line-chart-area">
+                        <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
+                            <!-- Grid lines -->
+                            <line x1="0" y1="50" x2="400" y2="50" stroke="rgba(255,255,255,0.05)" />
+                            <line x1="0" y1="100" x2="400" y2="100" stroke="rgba(255,255,255,0.05)" />
+                            <line x1="0" y1="150" x2="400" y2="150" stroke="rgba(255,255,255,0.05)" />
+                            <!-- tenure (highest) -->
+                            <polyline fill="none" stroke="#4f8cff" stroke-width="2" points="0,180 50,160 100,140 150,120 200,100 250,80 300,50 350,30 400,20" />
+                            <!-- Contract_Two year -->
+                            <polyline fill="none" stroke="#8b5cf6" stroke-width="2" points="0,170 50,150 100,130 150,110 200,90 250,85 300,80 350,75 400,60" />
+                            <!-- cpi_mom_pct_change -->
+                            <polyline fill="none" stroke="#14b8a6" stroke-width="2" points="0,160 50,140 100,120 150,110 200,105 250,100 300,95 350,90 400,88" />
+                            <!-- Contract_One year -->
+                            <polyline fill="none" stroke="#f59e0b" stroke-width="2" points="0,175 50,160 100,145 150,140 200,135 250,130 300,125 350,120 400,118" />
+                            <!-- DeviceProtection_Yes -->
+                            <polyline fill="none" stroke="#ef4444" stroke-width="2" points="0,178 50,165 100,150 150,145 200,140 250,138 300,130 350,125 400,120" />
+                        </svg>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot" style="background: #4f8cff;"></div> tenure</div>
+                        <div class="legend-item"><div class="legend-dot" style="background: #8b5cf6;"></div> Contract_Two yr</div>
+                        <div class="legend-item"><div class="legend-dot" style="background: #14b8a6;"></div> CPI MoM</div>
+                        <div class="legend-item"><div class="legend-dot" style="background: #f59e0b;"></div> Contract_One yr</div>
+                        <div class="legend-item"><div class="legend-dot" style="background: #ef4444;"></div> DeviceProtection</div>
+                    </div>
+                </div>
+
+                <!-- Bar: Drifted Features per Window -->
+                <div class="chart-card">
+                    <div class="chart-title">Significantly Drifted Features per Window</div>
+                    <div class="bar-chart">
+                        <div class="bar-group">
+                            <div class="bar-value">15</div>
+                            <div class="bar" style="height: 75%; background: linear-gradient(180deg, var(--accent-teal), rgba(20, 184, 166, 0.4));"></div>
+                            <div class="bar-label">W1</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">19</div>
+                            <div class="bar" style="height: 95%; background: linear-gradient(180deg, var(--accent-orange), rgba(245, 158, 11, 0.4));"></div>
+                            <div class="bar-label">W2</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">19</div>
+                            <div class="bar" style="height: 95%; background: linear-gradient(180deg, var(--accent-orange), rgba(245, 158, 11, 0.4));"></div>
+                            <div class="bar-label">W3</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">18</div>
+                            <div class="bar" style="height: 90%; background: linear-gradient(180deg, var(--accent-orange), rgba(245, 158, 11, 0.4));"></div>
+                            <div class="bar-label">W4</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">18</div>
+                            <div class="bar" style="height: 90%; background: linear-gradient(180deg, var(--accent-orange), rgba(245, 158, 11, 0.4));"></div>
+                            <div class="bar-label">W5</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">19</div>
+                            <div class="bar" style="height: 95%; background: linear-gradient(180deg, var(--accent-orange), rgba(245, 158, 11, 0.4));"></div>
+                            <div class="bar-label">W6</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">20</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-red), rgba(239, 68, 68, 0.4));"></div>
+                            <div class="bar-label">W7</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">20</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-red), rgba(239, 68, 68, 0.4));"></div>
+                            <div class="bar-label">W8</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-value">20</div>
+                            <div class="bar" style="height: 100%; background: linear-gradient(180deg, var(--accent-red), rgba(239, 68, 68, 0.4));"></div>
+                            <div class="bar-label">W9</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 4px;">
+                        Out of 32 total features | Mann-Whitney α=0.05
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drift Detail Table -->
+            <div class="chart-card" style="margin-top: 0;">
+                <div class="chart-title">Per-Window Drift Summary</div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Window</th>
+                                <th>Features Drifted</th>
+                                <th>% Drifted</th>
+                                <th>Avg Effect Size</th>
+                                <th>Top Drifting Feature</th>
+                                <th>Max Effect Size</th>
+                                <th>Retrain Signal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>W1</td><td>15</td><td>46.9%</td><td>0.186</td>
+                                <td>tenure</td><td>0.520</td>
+                                <td><span class="status-pill status-medium">MEDIUM</span></td>
+                            </tr>
+                            <tr>
+                                <td>W2</td><td>19</td><td>59.4%</td><td>0.245</td>
+                                <td>tenure</td><td>0.672</td>
+                                <td><span class="status-pill status-medium">MEDIUM</span></td>
+                            </tr>
+                            <tr>
+                                <td>W3</td><td>19</td><td>59.4%</td><td>0.273</td>
+                                <td>tenure</td><td>0.756</td>
+                                <td><span class="status-pill status-medium">MEDIUM</span></td>
+                            </tr>
+                            <tr>
+                                <td>W4</td><td>18</td><td>56.3%</td><td>0.289</td>
+                                <td>tenure</td><td>0.809</td>
+                                <td><span class="status-pill status-medium">MEDIUM</span></td>
+                            </tr>
+                            <tr>
+                                <td>W5</td><td>18</td><td>56.3%</td><td>0.315</td>
+                                <td>tenure</td><td>0.863</td>
+                                <td><span class="status-pill status-medium">MEDIUM</span></td>
+                            </tr>
+                            <tr>
+                                <td>W6</td><td>19</td><td>59.4%</td><td>0.339</td>
+                                <td>tenure</td><td>0.903</td>
+                                <td><span class="status-pill status-medium">MEDIUM</span></td>
+                            </tr>
+                            <tr>
+                                <td>W7</td><td>20</td><td>62.5%</td><td>0.361</td>
+                                <td>tenure</td><td>0.938</td>
+                                <td><span class="status-pill status-high">HIGH</span></td>
+                            </tr>
+                            <tr>
+                                <td>W8</td><td>20</td><td>62.5%</td><td>0.383</td>
+                                <td>tenure</td><td>0.964</td>
+                                <td><span class="status-pill status-high">HIGH</span></td>
+                            </tr>
+                            <tr>
+                                <td>W9</td><td>20</td><td>62.5%</td><td>0.397</td>
+                                <td>tenure</td><td>0.978</td>
+                                <td><span class="status-pill status-high">HIGH</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted);">
+                    Data source: <code>phase6_drift_summary.csv</code> + <code>phase6_drift_detail.csv</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Generate scatter plot dots
+        const scatterChart = document.getElementById('scatter-chart');
+        const rng = (seed) => { let s = seed; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; };
+        const random = rng(42);
+
+        for (let i = 0; i < 80; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'scatter-dot ' + (random() > 0.6 ? 'error' : 'correct');
+            const u = random() * 0.6 + 0.3;  // U(x) tends higher for deferred
+            const d = random() * 0.8 + 0.1;  // D(x) spread
+            dot.style.left = (u * 85 + 5) + '%';
+            dot.style.bottom = (d * 80 + 5) + '%';
+            scatterChart.appendChild(dot);
+        }
+
+        // Generate heatmap
+        const heatmapEl = document.getElementById('heatmap');
+        const features = [
+            'tenure', 'Contract_Two year', 'cpi_mom_pct_change', 'Contract_One year',
+            'DeviceProtection_Yes', 'OnlineBackup_Yes', 'PaymentMethod_CC',
+            'PaymentMethod_Mail', 'TotalCharges', 'StreamingMovies_Yes'
+        ];
+
+        // Approximate effect sizes from Phase 3 output (increasing with window distance)
+        const baseEffects = [0.90, 0.70, 0.56, 0.42, 0.39, 0.38, 0.38, 0.37, 0.36, 0.35];
+        const random2 = rng(123);
+
+        features.forEach((feat, fi) => {
+            const row = document.createElement('div');
+            row.className = 'heatmap-row';
+
+            const label = document.createElement('div');
+            label.className = 'heatmap-label';
+            label.textContent = feat;
+            row.appendChild(label);
+
+            for (let w = 1; w <= 9; w++) {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                // Scale effect size: grows with window, varies by feature
+                const scale = (w / 9) * 0.7 + 0.3;
+                const effect = Math.min(1, baseEffects[fi] * scale + (random2() - 0.5) * 0.1);
+                const alpha = Math.max(0.1, effect);
+                cell.style.background = `rgba(79, 140, 255, ${alpha})`;
+                cell.textContent = effect.toFixed(2);
+                cell.style.color = alpha > 0.5 ? 'white' : 'rgba(255,255,255,0.5)';
+                row.appendChild(cell);
+            }
+
+            heatmapEl.appendChild(row);
+        });
+    </script>
+</body>
+</html>
