@@ -1,0 +1,172 @@
+{
+  "analyst_deferral_queue": {
+    "title": "Churn Deferral Queue \u2014 Analyst View",
+    "description": "Customer-level queue of cases the model is uncertain about or that show explanation drift. Sorted by composite risk score.",
+    "data_source": "phase6_deferred_queue.csv",
+    "layout": {
+      "filters": [
+        {
+          "field": "window_id",
+          "type": "dropdown",
+          "label": "Time Window"
+        },
+        {
+          "field": "predicted_churn_prob",
+          "type": "range_slider",
+          "label": "Churn Probability",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "field": "drift_severity_D",
+          "type": "range_slider",
+          "label": "Drift Severity",
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "kpi_cards": [
+        {
+          "metric": "total_deferred",
+          "label": "Cases in Queue",
+          "calculation": "COUNT(*)"
+        },
+        {
+          "metric": "avg_composite_score",
+          "label": "Avg Risk Score",
+          "calculation": "AVG(composite_score)"
+        },
+        {
+          "metric": "pct_model_errors",
+          "label": "% Model Errors (actual)",
+          "calculation": "AVG(is_model_error) * 100"
+        },
+        {
+          "metric": "avg_churn_prob",
+          "label": "Avg Churn Probability",
+          "calculation": "AVG(predicted_churn_prob)"
+        }
+      ],
+      "main_table": {
+        "columns": [
+          "customer_index",
+          "window_id",
+          "composite_score",
+          "predicted_churn_prob",
+          "drift_severity_D",
+          "shap_explanation_1",
+          "shap_explanation_2",
+          "shap_explanation_3",
+          "tenure",
+          "MonthlyCharges",
+          "Contract_Two_year"
+        ],
+        "sort": {
+          "field": "composite_score",
+          "direction": "descending"
+        },
+        "conditional_formatting": {
+          "composite_score": {
+            "color_scale": "red_yellow_green_reversed"
+          },
+          "drift_severity_D": {
+            "color_scale": "orange_gradient"
+          }
+        }
+      },
+      "charts": [
+        {
+          "type": "scatter",
+          "title": "U(x) vs D(x) \u2014 Deferred Cases",
+          "x": "uncertainty_score_U",
+          "y": "drift_severity_D",
+          "color": "is_model_error",
+          "tooltip": [
+            "customer_index",
+            "shap_explanation_1"
+          ]
+        },
+        {
+          "type": "bar",
+          "title": "Deferred Cases by Window",
+          "x": "window_id",
+          "y": "COUNT(*)",
+          "color": "is_model_error"
+        }
+      ]
+    }
+  },
+  "ml_team_drift_monitor": {
+    "title": "Explanation Drift Monitor \u2014 ML Team View",
+    "description": "Tracks how SHAP explanation distributions shift over time relative to the baseline window. Helps decide when to retrain.",
+    "data_sources": [
+      "phase6_drift_summary.csv",
+      "phase6_drift_detail.csv",
+      "phase6_feature_drift_trend.csv"
+    ],
+    "layout": {
+      "filters": [
+        {
+          "field": "feature",
+          "type": "multi_select",
+          "label": "Features"
+        },
+        {
+          "field": "window_id",
+          "type": "range_slider",
+          "label": "Window Range"
+        }
+      ],
+      "kpi_cards": [
+        {
+          "metric": "latest_n_drifted",
+          "label": "Features Drifted (Latest Window)"
+        },
+        {
+          "metric": "latest_avg_effect",
+          "label": "Avg Effect Size (Latest)"
+        },
+        {
+          "metric": "retrain_signal",
+          "label": "Retrain Signal",
+          "calculation": "IF(latest_pct_drifted > 60, 'HIGH', IF(latest_pct_drifted > 40, 'MEDIUM', 'LOW'))"
+        }
+      ],
+      "charts": [
+        {
+          "type": "heatmap",
+          "title": "Feature \u00d7 Window Drift Heatmap",
+          "data": "phase6_drift_detail.csv",
+          "x": "window_id",
+          "y": "feature",
+          "value": "effect_size",
+          "color_scale": "blues"
+        },
+        {
+          "type": "line",
+          "title": "Drift Trend: Top Features Over Time",
+          "data": "phase6_feature_drift_trend.csv",
+          "x": "window_id",
+          "y": "effect_size",
+          "series": "feature",
+          "top_n": 5
+        },
+        {
+          "type": "bar",
+          "title": "Number of Significantly Drifted Features per Window",
+          "data": "phase6_drift_summary.csv",
+          "x": "window_id",
+          "y": "n_features_drifted"
+        },
+        {
+          "type": "stacked_bar",
+          "title": "Drift Significance Breakdown per Window",
+          "data": "phase6_drift_detail.csv",
+          "x": "window_id",
+          "y": "COUNT(*)",
+          "stack": "significant_drift"
+        }
+      ]
+    }
+  }
+}
